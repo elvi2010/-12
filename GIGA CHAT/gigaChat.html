@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Платформер</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: sans-serif; background: #87CEEB; color: white; }
+    #ui { position: absolute; top: 10px; left: 10px; font-size: 20px; }
+    #game {
+      position: relative;
+      width: 600px;
+      height: 300px;
+      margin: 50px auto;
+      background: #d2b48c;
+      border: 2px solid #000;
+      overflow: hidden;
+    }
+    .player {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: red;
+      bottom: 0;
+      left: 50px;
+    }
+    .platform {
+      position: absolute;
+      width: 120px;
+      height: 20px;
+      background: #8b4513;
+    }
+    .coin {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: gold;
+      border-radius: 50%;
+    }
+    #finish {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: green;
+      right: 0;
+      bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="ui">Очки: <span id="score">0</span></div>
+<div id="game">
+  <div class="player" id="player"></div>
+  <div class="platform" style="left: 50px; bottom: 20px;"></div>
+  <div class="platform" style="left: 200px; bottom: 100px;"></div>
+  <div class="platform" style="left: 400px; bottom: 20px;"></div>
+  
+  <!-- Монеты -->
+  <div class="coin" style="left: 150px; bottom: 70px;" data-value="1"></div>
+  <div class="coin" style="left: 350px; bottom: -10px;" data-value="1"></div>
+
+  <div id="finish"></div>
+</div>
+
+<script>
+  const player = document.getElementById('player');
+  const game = document.getElementById('game');
+  const scoreDisplay = document.getElementById('score');
+
+  let x = 50, y = 0, speed = 5, gravity = 0.5, velocityY = 0, onGround = false;
+  let score = 0;
+
+  function movePlayer() {
+    const rect = player.getBoundingClientRect();
+
+    // Гравитация
+    velocityY += gravity;
+    let newY = y + velocityY;
+
+    // Сброс флага "на земле"
+    onGround = false;
+
+    // Проверка столкновений с платформами
+    document.querySelectorAll('.platform').forEach(p => {
+        const pRect = p.getBoundingClientRect();
+        if (rect.left < pRect.right && rect.right > pRect.left) {
+            // Столкновение снизу (приземление)
+            if (y + player.offsetHeight <= pRect.top && newY + player.offsetHeight > pRect.top) {
+                newY = pRect.top - player.offsetHeight;
+                velocityY = 0;
+                onGround = true;
+            }
+            // Столкновение сверху (удар головой)
+            if (y >= pRect.bottom && newY < pRect.bottom) {
+                newY = pRect.bottom;
+                velocityY = 0.1;
+            }
+        }
+    });
+
+    // Проверка пола игры
+    if (newY + player.offsetHeight > game.offsetHeight) {
+        newY = game.offsetHeight - player.offsetHeight;
+        velocityY = 0;
+        onGround = true;
+    }
+
+    y = newY;
+
+    // Ограничение по бокам
+    if (x < 0) x = 0;
+    if (x + player.offsetWidth > game.offsetWidth) x = game.offsetWidth - player.offsetWidth;
+
+    player.style.left = x + 'px';
+    player.style.bottom = y + 'px';
+
+    // Проверка сбора монет
+    document.querySelectorAll('.coin').forEach(coin => {
+        if (!coin.dataset.collected) {
+            const cRect = coin.getBoundingClientRect();
+            if (rect.left < cRect.right && rect.right > cRect.left &&
+                rect.bottom > cRect.top && rect.top < cRect.bottom) {
+                score += parseInt(coin.dataset.value);
+                scoreDisplay.textContent = score;
+                coin.dataset.collected = 'true';
+                coin.style.display = 'none'; // Убираем монету с экрана
+            }
+        }
+    });
+
+    // Проверка победы
+    const finishRect = document.getElementById('finish').getBoundingClientRect();
+    if (rect.left < finishRect.right && rect.right > finishRect.left && rect.bottom >= finishRect.top) {
+        alert('Победа! Ваш счёт: ' + score);
+        location.reload(); // Перезапуск игры
+     }
+
+    requestAnimationFrame(movePlayer);
+}
+
+document.addEventListener('keydown', e => {
+    if (e.code === 'ArrowLeft') x -= speed;
+    if (e.code === 'ArrowRight') x += speed;
+    
+    // Прыжок только если стоим на земле
+    if (e.code === 'Space' && onGround) {
+        velocityY = -12; // Сила прыжка
+     }
+});
+
+movePlayer();
+</script>
+</body>
+</html>
