@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Platformer Fixed</title>
+<style>
+body { margin:0; background:#222; overflow:hidden; }
+
+#game {
+  position:relative;
+  width:800px; height:400px;
+  margin:20px auto;
+  background:#87ceeb;
+  overflow:hidden;
+}
+
+.world {
+  position:absolute;
+  width:800px; height:800px;
+}
+
+.player {
+  position:absolute;
+  width:30px; height:30px;
+  background:red;
+}
+
+/* ✅ ФИКС ЗДЕСЬ */
+.platform {
+  position:absolute;
+  background:#333;
+  height:20px;
+}
+
+.coin {
+  position:absolute;
+  width:15px; height:15px;
+  background:gold;
+  border-radius:50%;
+}
+
+#score {
+  position:absolute;
+  top:5px; left:10px;
+  font-weight:bold;
+}
+</style>
+</head>
+<body>
+
+<div id="game">
+  <div id="score">Монеты: 0</div>
+
+  <div class="world" id="world">
+    <div id="player" class="player"></div>
+
+    <!-- платформы -->
+    <div class="platform" style="left:0; top:770px; width:800px;"></div>
+    <div class="platform" style="left:100px; top:650px; width:150px;"></div>
+    <div class="platform" style="left:300px; top:550px; width:150px;"></div>
+    <div class="platform" style="left:550px; top:450px; width:150px;"></div>
+    <div class="platform" style="left:200px; top:350px; width:150px;"></div>
+    <div class="platform" style="left:400px; top:250px; width:150px;"></div>
+
+    <!-- монеты -->
+    <div class="coin" style="left:120px; top:620px;"></div>
+    <div class="coin" style="left:320px; top:520px;"></div>
+    <div class="coin" style="left:580px; top:420px;"></div>
+    <div class="coin" style="left:220px; top:320px;"></div>
+    <div class="coin" style="left:420px; top:220px;"></div>
+  </div>
+</div>
+
+<script>
+const player = document.getElementById("player");
+const world = document.getElementById("world");
+const platforms = document.querySelectorAll(".platform");
+let coins = document.querySelectorAll(".coin");
+const scoreEl = document.getElementById("score");
+
+let x = 50, y = 700;
+let vx = 0, vy = 0;
+let gravity = 0.5;
+let onGround = false;
+let score = 0;
+
+const keys = {};
+document.addEventListener("keydown", e => keys[e.code] = true);
+document.addEventListener("keyup", e => keys[e.code] = false);
+
+function update() {
+
+  if (keys["ArrowLeft"]) vx = -3;
+  else if (keys["ArrowRight"]) vx = 3;
+  else vx = 0;
+
+  if (keys["Space"] && onGround) {
+    vy = -12;
+    onGround = false;
+  }
+
+  vy += gravity;
+  x += vx;
+  y += vy;
+
+  onGround = false;
+
+  platforms.forEach(p => {
+    let px = p.offsetLeft;
+    let py = p.offsetTop;
+    let pw = p.offsetWidth;
+    let ph = p.offsetHeight;
+
+    if (x < px + pw &&
+        x + 30 > px &&
+        y < py + ph &&
+        y + 30 > py) {
+
+      if (vy > 0) {
+        y = py - 30;
+        vy = 0;
+        onGround = true;
+      }
+    }
+  });
+
+  coins.forEach(c => {
+    let cx = c.offsetLeft;
+    let cy = c.offsetTop;
+
+    if (x < cx + 15 &&
+        x + 30 > cx &&
+        y < cy + 15 &&
+        y + 30 > cy) {
+
+      c.remove();
+      coins = document.querySelectorAll(".coin");
+      score++;
+      scoreEl.textContent = "Монеты: " + score;
+    }
+  });
+
+  if (x < 0) x = 0;
+  if (x > 770) x = 770;
+  if (y > 800) { y = 700; vy = 0; }
+
+  let cameraY = Math.max(0, y - 200);
+  world.style.top = -cameraY + "px";
+
+  player.style.left = x + "px";
+  player.style.top = y + "px";
+
+  requestAnimationFrame(update);
+}
+
+update();
+</script>
+
+</body>
+</html>
